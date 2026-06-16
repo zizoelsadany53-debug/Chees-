@@ -2,8 +2,15 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+// Returns undefined if the value is an uninterpolated Railway reference variable
+// (e.g. "${{ MySQL.MYSQLHOST }}"), so callers can fall back to a safe default.
+function resolveEnv(value) {
+  if (!value || value.includes("${{")) return undefined;
+  return value;
+}
+
 function railwayDbConfig() {
-  const databaseUrl = process.env.DATABASE_URL || process.env.MYSQL_URL;
+  const databaseUrl = resolveEnv(process.env.DATABASE_URL) || resolveEnv(process.env.MYSQL_URL);
   if (databaseUrl) {
     const url = new URL(databaseUrl);
     return {
@@ -16,11 +23,11 @@ function railwayDbConfig() {
   }
 
   return {
-    host: process.env.MYSQLHOST || process.env.DB_HOST || "localhost",
-    port: Number(process.env.MYSQLPORT || process.env.DB_PORT || 3306),
-    user: process.env.MYSQLUSER || process.env.DB_USER || "root",
-    password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || "",
-    database: process.env.MYSQLDATABASE || process.env.DB_NAME || "global_chess_arena"
+    host: resolveEnv(process.env.MYSQLHOST) || resolveEnv(process.env.DB_HOST) || "mysql.railway.internal",
+    port: Number(resolveEnv(process.env.MYSQLPORT) || resolveEnv(process.env.DB_PORT) || 3306),
+    user: resolveEnv(process.env.MYSQLUSER) || resolveEnv(process.env.DB_USER) || "root",
+    password: resolveEnv(process.env.MYSQLPASSWORD) || resolveEnv(process.env.DB_PASSWORD) || "",
+    database: resolveEnv(process.env.MYSQLDATABASE) || resolveEnv(process.env.DB_NAME) || "global_chess_arena"
   };
 }
 
