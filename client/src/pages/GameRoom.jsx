@@ -38,6 +38,54 @@ function formatMoveSymbol(move, isWhite) {
   return move;
 }
 
+function getEndInfo(payload, userId, lang) {
+  const winnerColor = payload.result === "white_win" ? "white" : payload.result === "black_win" ? "black" : null;
+  const loserColor = winnerColor === "white" ? "black" : winnerColor === "black" ? "white" : null;
+  const winnerPlayer = winnerColor ? payload.players[winnerColor] : null;
+  const loserPlayer = loserColor ? payload.players[loserColor] : null;
+  const winnerName = winnerPlayer ? (winnerPlayer.id === userId ? (lang === "ar" ? "أنت" : "You") : winnerPlayer.username) : "";
+  const loserName = loserPlayer ? (loserPlayer.id === userId ? (lang === "ar" ? "أنت" : "You") : loserPlayer.username) : "";
+  let message = lang === "ar" ? "انتهت المباراة." : "Match finished.";
+
+  if (payload.reason === "resign") {
+    message = lang === "ar" ? "انسحب أحد اللاعبين." : "A player resigned.";
+  } else if (payload.reason === "timeout") {
+    message = lang === "ar" ? "انتهى الوقت." : "Time has ended.";
+  } else if (payload.reason === "disconnect") {
+    message = lang === "ar" ? "انقطع اتصال أحد اللاعبين." : "A player disconnected.";
+  } else if (payload.result === "draw") {
+    message = lang === "ar" ? "انتهت المباراة بالتعادل." : "The game ended in a draw.";
+  }
+
+  // determine a concise localized reason text
+  let reasonText = message;
+  const r = payload.reason;
+  if (payload.result === "draw") {
+    reasonText = lang === "ar" ? "تعادل" : "Draw";
+  } else if (r === "resign") {
+    reasonText = lang === "ar" ? "انسحب لاعب" : "Resignation";
+  } else if (r === "timeout") {
+    reasonText = lang === "ar" ? "انتهى الوقت" : "Timeout";
+  } else if (r === "disconnect") {
+    reasonText = lang === "ar" ? "انقطع الاتصال" : "Disconnected";
+  } else if (r === "checkmate") {
+    reasonText = lang === "ar" ? "كش ملك" : "Checkmate";
+  }
+
+  return {
+    winnerColor,
+    loserColor,
+    winnerPlayer,
+    loserPlayer,
+    winnerName,
+    loserName,
+    message,
+    reasonText,
+    isDraw: payload.result === "draw",
+    amIWinner: !!(winnerPlayer && winnerPlayer.id === userId)
+  };
+}
+
 function evaluateBoard(chess, playerColor) {
   let score = 0;
   const board = chess.board();
@@ -138,35 +186,6 @@ export default function GameRoom() {
     const winnerColor = payload.result === "white_win" ? "white" : "black";
     const amIWinner = myRole === winnerColor;
 
-    let message = "انتهت اللعبة (Game finished)";
-    if (payload.reason === "resign") {
-      if (amIWinner) {
-        message = "انسحب الخصم! لقد فزت بالمباراة! 🎉 (Opponent resigned! You win!)";
-      } else {
-        message = "لقد انسحبت من اللعبة. (You resigned.)";
-      }
-    } else if (payload.reason === "timeout") {
-      if (amIWinner) {
-        message = "انتهى وقت الخصم! لقد فزت بالمباراة! ⏳ (Opponent timeout! You win!)";
-      } else {
-        message = "انتهى وقتك! خسرت المباراة. (Timeout! You lost.)";
-      }
-    } else if (payload.reason === "disconnect") {
-      if (amIWinner) {
-        message = "انسحب الخصم أو انقطع اتصاله! لقد فزت! 🔌 (Opponent disconnected! You win!)";
-      } else {
-        message = "انقطع اتصالك باللعبة. (You disconnected.)";
-      }
-    } else if (payload.result === "white_win" || payload.result === "black_win") {
-      if (amIWinner) {
-        message = "كش ملك! لقد فزت بالمباراة! 🏆 (Checkmate! You win!)";
-      } else {
-        message = "كش ملك! الخصم فاز بالمباراة. (Checkmate! Opponent wins.)";
-      }
-    } else if (payload.result === "draw") {
-      message = "انتهت المباراة بالتعادل. 🤝 (Draw!)";
-    }
-
     // Trigger Confetti for the Winner!
     if (amIWinner && (payload.result === "white_win" || payload.result === "black_win")) {
       confetti({
@@ -183,12 +202,8 @@ export default function GameRoom() {
       }, 400);
     }
 
-    toast.success(`${message}\nمغادرة الغرفة خلال 4 ثوانٍ... (Leaving in 4s...)`, { duration: 4000 });
-
-    setTimeout(() => {
-      navigate("/");
-    }, 4000);
-  }, [user?.id, navigate]);
+    setEnded(payload);
+  }, [user?.id]);
 
   const myColor = useMemo(() => {
     if (state?.color) return state.color;
@@ -276,6 +291,17 @@ export default function GameRoom() {
   const [reportType, setReportType] = useState("problem");
   const [reportMessage, setReportMessage] = useState("");
   const [reportTargetId, setReportTargetId] = useState("");
+
+  const endInfo = useMemo(() => {
+    if (!ended) return null;
+    return getEndInfo(ended, user?.id, lang);
+  }, [ended, user?.id, lang]);
+
+  // Note: No auto-close - modal remains until user presses Back.
+
+  const handleLeaveMatch = () => {
+    navigate("/");
+  };
 
   const handleSendReport = async () => {
     if (!reportMessage.trim() || reportMessage.trim().length < 10) {
@@ -799,6 +825,52 @@ export default function GameRoom() {
             <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
               <button className="primary" type="button" onClick={handleSendReport}>{lang === "ar" ? "إرسال البلاغ" : "Submit report"}</button>
               <button className="primary danger-btn" type="button" onClick={() => setShowReportModal(false)}>{lang === "ar" ? "إلغاء" : "Cancel"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {ended && endInfo && (
+        <div className="modal-backdrop">
+          <div className="modal-content end-modal glass" onClick={(event) => event.stopPropagation()}>
+            <div className="end-modal-header">
+              <h2>{lang === "ar" ? "انتهت المباراة" : "Match Over"}</h2>
+              <p>{endInfo.message}</p>
+              {endInfo.reasonText && (
+                <p className="end-reason" style={{ marginTop: 6 }}>{endInfo.reasonText}</p>
+              )}
+            </div>
+
+            {endInfo.winnerColor ? (
+              <div className="end-result-grid">
+                <div className="end-result-card winner">
+                  <strong>{lang === "ar" ? "الفائز" : "Winner"}</strong>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span className="result-badge">{endInfo.winnerColor === "white" ? (lang === "ar" ? "الأبيض" : "White") : (lang === "ar" ? "الأسود" : "Black")}</span>
+                    <small style={{ margin: 0 }}>{endInfo.winnerName}</small>
+                  </div>
+                </div>
+                <div className="end-result-card loser">
+                  <strong>{lang === "ar" ? "الخاسر" : "Loser"}</strong>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span className="result-badge">{endInfo.loserColor === "white" ? (lang === "ar" ? "الأبيض" : "White") : (lang === "ar" ? "الأسود" : "Black")}</span>
+                    <small style={{ margin: 0 }}>{endInfo.loserName}</small>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="end-result-grid" style={{ gap: 16 }}>
+                <div className="end-result-card" style={{ gridColumn: "1 / -1" }}>
+                  <strong>{lang === "ar" ? "تعادل" : "Draw"}</strong>
+                  <span>{lang === "ar" ? "المباراة انتهت بالتعادل" : "The match ended in a draw."}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="end-modal-actions">
+              <button className="primary" type="button" onClick={handleLeaveMatch}>
+                {lang === "ar" ? "العودة" : "Back"}
+              </button>
             </div>
           </div>
         </div>

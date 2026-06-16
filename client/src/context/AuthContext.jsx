@@ -39,7 +39,13 @@ export function AuthProvider({ children }) {
       },
       async register(payload) {
         const data = await registerUser(payload);
-        setUser(data.user);
+        if (!data.user?.id) {
+          const freshData = await fetchMe();
+          setUser(freshData.user);
+          setSession({ token: data.token, user: freshData.user });
+        } else {
+          setUser(data.user);
+        }
         setToken(data.token);
         toast.success("Account created");
       },

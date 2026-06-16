@@ -2,18 +2,35 @@ import { pool } from "../config/db.js";
 
 const publicFields = "id, username, email, elo_rating, avatar, invite_code, role, status, created_at";
 
-export async function createUser({ username, email, passwordHash, avatar, role = "player" }) {
-  const [result] = await pool.execute(
-    "INSERT INTO users (username, email, password, avatar, role) VALUES (:username, :email, :password, :avatar, :role)",
-    { username, email, password: passwordHash, avatar: avatar || null, role }
-  );
-  return findUserById(result.insertId);
-}
-
-export async function findUserByEmail(email) {
-  const [rows] = await pool.execute("SELECT * FROM users WHERE email = :email LIMIT 1", { email });
-  return rows[0] || null;
-}
+ function generateRandomSixDigitCode() {
+   return String(Math.floor(Math.random() * 1000000)).padStart(6, "0");
+ }
+ 
+ async function generateUniqueInviteCode() {
+   let code;
+   let attempts = 0;
+   do {
+     code = generateRandomSixDigitCode();
+     const [rows] = await pool.execute("SELECT 1 FROM users WHERE invite_code = :inviteCode LIMIT 1", { inviteCode: code });
+     if (!rows.length) return code;
+     attempts += 1;
+   } while (attempts < 10);
+   throw new Error("Unable to generate a unique user code. Please try again.");
+ }
+ 
+ export async function createUser({ username, email, passwordHash, avatar, role = "player" }) {
+   const invite_code = await generateUniqueInviteCode();
+   const [result] = await pool.execute(
+     "INSERT INTO users (username, email, password, avatar, role, invite_code) VALUES (:username, :email, :password, :avatar, :role, :invite_code)",
+     { username, email, password: passwordHash, avatar: avatar || null, role, invite_code }
+   );
+   return findUserById(result.insertId);
+ }
+ 
+ export async function findUserByEmail(email) {
+   const [rows] = await pool.execute("SELECT * FROM users WHERE email = :email LIMIT 1", { email });
+   return rows[0] || null;
+ }
 
 export async function findUserByInviteCode(inviteCode) {
   const [rows] = await pool.execute(

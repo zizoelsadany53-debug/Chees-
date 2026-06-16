@@ -8,6 +8,7 @@
   --panel-solid: #121212;
   --text: #ffffff;
   --muted: #888888;
+  --hero-piece: rgba(255, 255, 255, 0.45);
   
   /* Green Theme Defaults */
   --accent: #7cc96f;
@@ -37,6 +38,7 @@
   --panel-solid: #f5f5f5;
   --text: #000000;
   --muted: #666666;
+  --hero-piece: rgba(0, 0, 0, 0.18);
 
   /* Green Theme Defaults */
   --accent: #3d8c37;
@@ -645,8 +647,8 @@ a { color: inherit; text-decoration: none; }
   padding: clamp(18px, 4vw, 52px);
   overflow: hidden;
   background:
-    radial-gradient(circle at 82% 34%, rgba(255, 255, 255, 0.05), transparent 24rem),
-    linear-gradient(135deg, #060606, #000000 56%, #0c0c0c);
+    radial-gradient(circle at 82% 34%, var(--bg-glow), transparent 24rem),
+    linear-gradient(135deg, var(--bg), var(--bg-gradient-to) 56%, var(--bg));
 }
 
 .auth-visual {
@@ -668,7 +670,7 @@ a { color: inherit; text-decoration: none; }
 .hero-board span {
   display: grid;
   place-items: center;
-  color: rgba(11, 21, 14, 0.55);
+  color: var(--hero-piece);
   font-size: clamp(0.85rem, 2.2vw, 1.55rem);
 }
 
@@ -679,7 +681,7 @@ a { color: inherit; text-decoration: none; }
   justify-self: start;
   border-radius: 8px;
   padding: clamp(22px, 2.5vw, 32px);
-  background: rgba(17, 17, 17, 0.78);
+  background: var(--panel);
   overflow: hidden;
 }
 
@@ -742,7 +744,8 @@ a { color: inherit; text-decoration: none; }
 .auth-form input {
   min-height: 48px;
   padding-inline: 14px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--input-bg);
+  color: var(--text);
 }
 
 .auth-form .primary {
@@ -768,6 +771,10 @@ a { color: inherit; text-decoration: none; }
   color: var(--text);
 }
 
+.auth-card p {
+  color: var(--muted);
+}
+
 .auth-avatar-field p {
   margin: 0;
   color: var(--muted);
@@ -790,7 +797,7 @@ a { color: inherit; text-decoration: none; }
   gap: 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--input-bg);
   color: var(--text);
 }
 
@@ -1300,6 +1307,72 @@ th { color: var(--muted); font-size: 0.82rem; text-transform: uppercase; }
   font-size: 1.6rem;
   color: var(--accent);
 }
+
+/* End-of-match modal styles (theme-aware) */
+.end-modal {
+  max-width: 540px;
+  min-width: 320px;
+  padding: 28px 26px;
+  background: var(--panel-solid);
+  backdrop-filter: blur(14px);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  color: var(--text);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+}
+
+.end-modal-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.end-modal-header h2 { font-size: 1.75rem; color: var(--accent); margin: 0; }
+.end-modal-header p { margin: 0; color: var(--muted); }
+.end-reason { color: var(--muted); font-weight: 700; margin-top: 6px; }
+
+.end-result-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.end-result-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  background: var(--item-bg);
+  text-align: left;
+}
+.end-result-card strong { display: block; margin-bottom: 6px; color: var(--text); }
+.end-result-card span { display: block; font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; }
+.end-result-card small { color: var(--muted); }
+
+.end-result-card.winner { border-color: var(--accent); box-shadow: 0 6px 18px var(--accent-glow-ring); }
+.end-result-card.loser { border-color: var(--danger); }
+
+.end-modal-actions { display:flex; justify-content:center; gap:12px; margin-top:22px; }
+.end-modal-actions button.primary { min-width:140px; background: linear-gradient(135deg, var(--accent), var(--accent-strong)); color: var(--accent-text); }
+
+/* Result badge */
+.result-badge {
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  display: inline-block;
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+}
+.end-result-card.winner .result-badge { background: linear-gradient(90deg, var(--accent), var(--accent-strong)); color: var(--accent-text); }
+.end-result-card.loser .result-badge { background: rgba(255,255,255,0.03); color: var(--text); border: 1px solid rgba(255,255,255,0.03); }
+
+/* Minor light-mode tweak to keep contrast consistent */
+:root[data-theme="light"] .end-modal { background: var(--panel-solid); }
+:root[data-theme="light"] .result-badge { background: rgba(0,0,0,0.04); color: var(--text); }
+
+
 
 .copy-link-container {
   display: flex;

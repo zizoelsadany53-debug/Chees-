@@ -37,7 +37,10 @@ export async function updateProfile(req, res, next) {
 export async function leaderboard(req, res, next) {
   try {
     const users = await listUsers({ limit: 100 });
-    res.json({ users });
+    // If the requester is an admin, return full list; otherwise hide admin accounts
+    const isAdmin = req.user && req.user.role === "admin";
+    const result = isAdmin ? users : users.filter((u) => u.role !== "admin");
+    res.json({ users: result });
   } catch (error) {
     next(error);
   }
