@@ -4,7 +4,7 @@ dotenv.config();
 
 // Returns undefined if the value is an uninterpolated Railway reference variable
 // (e.g. "${{ MySQL.MYSQLHOST }}"), so callers can fall back to a safe default.
-function resolveEnv(value) {
+export function resolveEnv(value) {
   if (!value || value.includes("${{")) return undefined;
   return value;
 }

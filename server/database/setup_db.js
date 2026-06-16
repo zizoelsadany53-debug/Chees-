@@ -1,22 +1,20 @@
 import fs from "fs";
 import mysql from "mysql2/promise";
-import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import { resolveEnv } from "../config/env.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const envPath = path.join(__dirname, "../.env");
-dotenv.config({ path: envPath });
 
 const schemaPath = path.join(__dirname, "schema.sql");
 const schemaSql = fs.readFileSync(schemaPath, "utf8");
 
 async function main() {
   const connection = await mysql.createConnection({
-    host: process.env.DB_HOST || "localhost",
-    port: parseInt(process.env.DB_PORT || "3306", 10),
-    user: process.env.DB_USER || "root",
-    password: process.env.DB_PASSWORD || "",
+    host: resolveEnv(process.env.MYSQLHOST) || "mysql.railway.internal",
+    port: parseInt(resolveEnv(process.env.MYSQLPORT) || "3306", 10),
+    user: resolveEnv(process.env.MYSQLUSER) || "root",
+    password: resolveEnv(process.env.MYSQLPASSWORD) || "",
     multipleStatements: true
   });
 
