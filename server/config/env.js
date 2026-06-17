@@ -23,11 +23,11 @@ function railwayDbConfig() {
   }
 
   return {
-    host: resolveEnv(process.env.MYSQLHOST) || resolveEnv(process.env.DB_HOST) || "mysql.railway.internal",
-    port: Number(resolveEnv(process.env.MYSQLPORT) || resolveEnv(process.env.DB_PORT) || 3306),
-    user: resolveEnv(process.env.MYSQLUSER) || resolveEnv(process.env.DB_USER) || "root",
-    password: resolveEnv(process.env.MYSQLPASSWORD) || resolveEnv(process.env.DB_PASSWORD) || "",
-    database: resolveEnv(process.env.MYSQLDATABASE) || resolveEnv(process.env.DB_NAME) || "global_chess_arena"
+    host: process.env.MYSQLHOST || "mysql.railway.internal",
+    port: Number(process.env.MYSQLPORT || 3306),
+    user: process.env.MYSQLUSER || "root",
+    password: process.env.MYSQLPASSWORD || "",
+    database: process.env.MYSQLDATABASE || "global_chess_arena"
   };
 }
 
